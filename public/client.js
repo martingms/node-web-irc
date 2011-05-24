@@ -18,24 +18,23 @@ $(document).ready(function() {
   socket.connect();
 });
 
-function write(data) {
-  console.log('write trigd');
-  if (data.nick && data.message) {
-    $('#chat').prepend('<p>'+data.nick+': '+data.message+'</p>');
-  }
-  if (data.announcement) {
-    $('#chat').prepend('<p style="color:grey;">'+data.announcement+'</p>');
-  }
-};
+function messageHandler(data) {
+  $('#chat').prepend('<p>'+data.nick+': '+data.message+'</p>');
+}
 
-function writeUserlist(data) {
-  return;
+function announcementHandler(data) {
+  $('#chat').prepend('<p style="color:grey;">'+data.announcement+'</p>');
+}
+
+function backlogHandler(data) {
+  for (var i = 0; i< data.backlog.length; i++) {
+    messageHandler(data.backlog[i]);
+  }
 }
 
 function sendMessage() {
   message = document.chatbox.message.value;
   socket.send({nick: username, message: message});
-  console.log('sendmessage triggd');
 }
 
 
@@ -44,30 +43,32 @@ var socket = new io.Socket();
 
 // Triggered when client connects with host 
 socket.on('connect', function() {
-  console.log('--> connected with socket');
   if (username && username != '') {
     socket.send('USERNAME:' + username);
-    console.log('--> username sent to server');
   }
 });
 
 // Triggered when client recieves data from host
 socket.on('message', function(data) {
-  if (data.announcement || (data.nick && data.message)) {
-    write(data);
-    console.log(data);
-    console.log('first if');
-  }
-  else if (data.userlist) {
-    writeUserlist(data.userlist);
-  }
-  else if (data.backlog) {
-    console.log('skal ikke trigges');
-    write(data);
+  switch (data.type) {
+    case 'announcement':
+      announcementHandler(data);
+      break;
+    case 'message':
+      messageHandler(data);
+      break;
+    case 'privmsg':
+      messageHandler(data);
+      break;
+    case 'backlog':
+      backlogHandler(data);
+      break;
+    default:
+      break;
   }
 });
 
 // Triggered when connection is lost between client and host
 socket.on('disconnect', function() {
-  console.log('Connection lost');
+  announcementHandler({type: 'announcement', announcement: 'Connection with server lost...'});
 });

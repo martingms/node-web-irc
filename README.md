@@ -6,6 +6,13 @@
 * Timestamp every message, preferably done by IRC.
 * Properly comment all the code so far.
 * Currently this is a XSS cesspool. Fix!
+* When client disconnects, an error is thrown that brings down the
+  server.
+* Send userlist.
+* Do something when username is taken.
+* Datastructure protocol should work client -> server, not just server
+  -> client.
+* Catch timeout when connecting to irc.
 
 ### Not-so-urgent
 

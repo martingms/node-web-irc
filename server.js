@@ -21,11 +21,18 @@ var path = require('path'),
     PORT = 8006,
     WEBROOT = path.join(path.dirname(__filename), 'public');
 
-var options = {ircserver: 'irc.pvv.ntnu.no',
-               channel: '#testtest',
-               welcomemessage: function(username) {return 'Velkommen til ukechatten, '+username+'!'}};
+var options = {
+               ircserver       : 'irc.pvv.ntnu.no',
+               channel         : '#testtest',
+               servernick      : 'UkaChatServer',
+               backlogbuffer   : 100,
+               welcomemessage  : function(username) {return 'Welcome to the UKE-chat, '+username+'!'},
+               joinmessage     : function(nick) {return nick+' has joined the chat!'},
+               partmessage     : function(nick) {return nick+' has left the chat...'}
+              };
 
 // Copied from the paperboy example at: https://github.com/felixge/node-paperboy
+/*==============================START WEBSERVER============================== */
 server = http.createServer(function(req, res) {
   var ip = req.connection.remoteAddress;
   paperboy
@@ -57,11 +64,14 @@ function log(statCode, url, ip, err) {
   if (err) logStr += ' - ' + err;
   console.log(logStr);
 };
-
+/*=============================END WEBSERVER=================================*/
 
 /* Socket.IO */
 var socket = io.listen(server);
 var clients = [];
+
+// IRC-backlog
+var backlog = [];
 
 // Triggered when someone connects to the server
 socket.on('connection', function(client) {
@@ -76,16 +86,28 @@ socket.on('connection', function(client) {
 
       client.ircsession = new irc({server: options.ircserver, nick: client.username});
 
+      //TODO this timeout-spaghetti seems a bit hackish, fix
       client.ircsession.connect(function() {
         setTimeout(function() {
           client.ircsession.join(options.channel);
           setTimeout(function() {
-            client.send({announcement:options.welcomemessage(client.username)});
+            client.send({type: 'announcement', announcement:options.welcomemessage(client.username)});
           }, 2000);
         }, 2000);
       });
 
-      //client.send({messages:backlog}); TODO Send backlog
+      client.ircsession.addListener('privmsg', function(data) {
+        var nick = data.person.nick;
+        var to = data.params[0];
+        var message = data.params[1];
+        //TODO to (irc-nick) does not necessarily equal the client.username
+        //same problem as addListener(join)
+        if (to == client.username) {
+          client.send({type: 'privmsg', nick: nick, message: message});
+        }
+      });
+
+      client.send({type: 'backlog', backlog: backlog});
       //client.send({userlist:usernames}); TODO Send usernames
 
       clients.push(client);
@@ -101,12 +123,21 @@ socket.on('connection', function(client) {
   // Triggered when someone disconnects from the server
   client.on('disconnect', function() {
     clients.pop(client);
+    //FIXME for some reason this brings down the server upon quit
+    /client.ircsession.quit('Logget ut av Innsida');
   });
 });
 
+function sendToAllClients(data) {
+  console.log(clients.length);
+  for (var i = 0; i < clients.length; i++) {
+    clients[i].send(data);
+  }
+};
+
 /* IRC-js */
 // Set up main irc session and join channel
-mainsession = new irc({ server: options.ircserver, nick: 'UKAChatServer' });
+mainsession = new irc({ server: options.ircserver, nick: options.servernick });
 mainsession.connect(function() {
   setTimeout(function() {
     mainsession.join(options.channel);
@@ -114,15 +145,25 @@ mainsession.connect(function() {
   console.log('Main IRC-session initialized');
 });
 
-mainsession.addListener('privmsg', function(msg) {
-  nick = msg.person.nick;
-  channel = msg.params[0];
-  message = msg.params[1];
+mainsession.addListener('privmsg', function(data) {
+  var nick = data.person.nick;
+  var channel = data.params[0];
+  var message = data.params[1];
 
-  if (clients.length > 0) {
-    for (var i = 0; i < clients.length; i++) {
-      clients[i].send({nick: nick, message: message});
-      console.log('--> Sent a message to: '+clients[i].username);
-    }
+  backlog.push({nick: nick, message: message});
+  if (backlog.length > options.backlogbuffer) {
+    backlog.shift();
   }
+
+  sendToAllClients({type: 'message', nick: nick, message: message});
+});
+
+mainsession.addListener('join', function(data) {
+  var nick = data.person.nick;
+  sendToAllClients({type: 'announcement', announcement: options.joinmessage(nick)});
+});
+
+mainsession.addListener('part', function(data) {
+  var nick = data.person.nick;
+  sendToAllClients({type: 'announcement', announcement: options.partmessage(nick)});
 });

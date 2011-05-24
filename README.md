@@ -12,7 +12,7 @@
 * Datastructure protocol should work client -> server, not just server
   -> client.
 * Catch timeout when connecting to irc.
-* __Make private messages not show up for everyone.__
+* ~~Make private messages not show up for everyone.~~
 
 ### Not-so-urgent
 

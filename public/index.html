@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>UKACHAT</title>
+        <link rel="stylesheet" href="styles.css" type="text/css"/>
+    </head>
+    <body>
+        <form name='chatbox'>
+         <textarea name="message" cols="40" rows="5"></textarea><br>
+         <input type="button" value="Send" onClick=sendMessage() />
+       </form>
+        <div id="chat">
+        </div>
+
+        <!-- Scripts -->
+        <script src="jquery.min.js"></script>
+        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.5.1/jquery.min.js"></script>
+        <script src="/socket.io/socket.io.js"></script>
+        <script src="client.js"></script>
+    </body>
+</html>

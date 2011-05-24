@@ -19,11 +19,11 @@ $(document).ready(function() {
 });
 
 function messageHandler(data) {
-  $('#chat').prepend('<p>'+data.nick+': '+data.message+'</p>');
+  $('#chat').prepend('<p>['+data.timestamp+'] - '+data.nick+': '+data.message+'</p>');
 }
 
 function announcementHandler(data) {
-  $('#chat').prepend('<p style="color:grey;">'+data.announcement+'</p>');
+  $('#chat').prepend('<p style="color:grey;">['+data.timestamp+'] - '+data.announcement+'</p>');
 }
 
 function backlogHandler(data) {

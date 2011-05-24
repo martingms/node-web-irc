@@ -22,13 +22,13 @@ var path = require('path'),
     WEBROOT = path.join(path.dirname(__filename), 'public');
 
 var options = {
-               ircserver       : 'irc.pvv.ntnu.no',
-               channel         : '#testtest',
-               servernick      : 'UkaChatServer',
-               backlogbuffer   : 100,
-               welcomemessage  : function(username) {return 'Welcome to the UKE-chat, '+username+'!'},
-               joinmessage     : function(nick) {return nick+' has joined the chat!'},
-               partmessage     : function(nick) {return nick+' has left the chat...'}
+                ircserver       : 'localhost',
+                channel         : '#nodechat',
+                servernick      : 'ChatServer',
+                backlogbuffer   : 100,
+                welcomemessage  : function(username) {return 'Welcome to the UKE-chat, '+username+'!'},
+                joinmessage     : function(nick) {return nick+' has joined the chat!'},
+                partmessage     : function(nick) {return nick+' has left the chat...'}
               };
 
 // Copied from the paperboy example at: https://github.com/felixge/node-paperboy
@@ -91,7 +91,7 @@ socket.on('connection', function(client) {
         setTimeout(function() {
           client.ircsession.join(options.channel);
           setTimeout(function() {
-            client.send({type: 'announcement', announcement:options.welcomemessage(client.username)});
+            //client.send({type: 'announcement', announcement:options.welcomemessage(client.username)});
           }, 2000);
         }, 2000);
       });
@@ -124,12 +124,12 @@ socket.on('connection', function(client) {
   client.on('disconnect', function() {
     clients.pop(client);
     //FIXME for some reason this brings down the server upon quit
-    /client.ircsession.quit('Logget ut av Innsida');
+    //client.ircsession.quit('Logget ut av Innsida');
+    client.ircsession.part(options.channel);
   });
 });
 
 function sendToAllClients(data) {
-  console.log(clients.length);
   for (var i = 0; i < clients.length; i++) {
     clients[i].send(data);
   }
@@ -142,28 +142,30 @@ mainsession.connect(function() {
   setTimeout(function() {
     mainsession.join(options.channel);
   }, 2000);
-  console.log('Main IRC-session initialized');
 });
 
 mainsession.addListener('privmsg', function(data) {
   var nick = data.person.nick;
   var channel = data.params[0];
   var message = data.params[1];
+  var date = new Date();
 
-  backlog.push({nick: nick, message: message});
+  backlog.push({nick: nick, message: message, timestamp: date});
   if (backlog.length > options.backlogbuffer) {
     backlog.shift();
   }
 
-  sendToAllClients({type: 'message', nick: nick, message: message});
+  sendToAllClients({type: 'message', nick: nick, message: message, timestamp: date});
 });
 
 mainsession.addListener('join', function(data) {
   var nick = data.person.nick;
-  sendToAllClients({type: 'announcement', announcement: options.joinmessage(nick)});
+  var date = new Date();
+  sendToAllClients({type: 'announcement', announcement: options.joinmessage(nick), timestamp: date});
 });
 
 mainsession.addListener('part', function(data) {
   var nick = data.person.nick;
-  sendToAllClients({type: 'announcement', announcement: options.partmessage(nick)});
+  var date = new Date();
+  sendToAllClients({type: 'announcement', announcement: options.partmessage(nick), timestamp: date});
 });

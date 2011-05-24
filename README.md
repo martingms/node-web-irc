@@ -3,6 +3,7 @@
 ### Urgent
 
 * Make private messages not show up for everyone.
+* Timestamp every message, preferably done by IRC.
 * Properly comment all the code so far.
 
 ### Not-so-urgent

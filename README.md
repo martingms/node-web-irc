@@ -5,6 +5,7 @@
 * Make private messages not show up for everyone.
 * Timestamp every message, preferably done by IRC.
 * Properly comment all the code so far.
+* Currently this is a XSS cesspool. Fix!
 
 ### Not-so-urgent
 

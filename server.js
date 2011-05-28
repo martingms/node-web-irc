@@ -15,7 +15,7 @@ var path = require('path'),
     http = require('http'),
     paperboy = require('paperboy'),
     io = require('socket.io'),
-    irc = require('./lib/IRC-js/lib/irc'),
+    Irc = require('./lib/IRC-js/lib/irc'),
 
     // Change to 8000-ish when developing
     PORT = 8006,
@@ -84,7 +84,7 @@ socket.on('connection', function(client) {
 
       console.log(client.sessionId + ' = ' + client.username);
 
-      client.ircsession = new irc({server: options.ircserver, nick: client.username});
+      client.ircsession = new Irc({server: options.ircserver, nick: client.username});
 
       //TODO this timeout-spaghetti seems a bit hackish, fix
       client.ircsession.connect(function() {
@@ -137,7 +137,7 @@ function sendToAllClients(data) {
 
 /* IRC-js */
 // Set up main irc session and join channel
-mainsession = new irc({ server: options.ircserver, nick: options.servernick });
+mainsession = new Irc({ server: options.ircserver, nick: options.servernick });
 mainsession.connect(function() {
   setTimeout(function() {
     mainsession.join(options.channel);

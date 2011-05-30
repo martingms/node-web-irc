@@ -96,19 +96,19 @@ socket.on('connection', function(client) {
         }, 2000);
       });
 
+      client.send({type: 'backlog', backlog: backlog});
+      //client.send({userlist:usernames}); TODO Send usernames
+
       client.ircsession.addListener('privmsg', function(data) {
         var nick = data.person.nick;
         var to = data.params[0];
         var message = data.params[1];
         //TODO to (irc-nick) does not necessarily equal the client.username
-        //same problem as addListener(join)
+        //same problem as mainsession.addListener(join)
         if (to == client.username) {
           client.send({type: 'privmsg', nick: nick, message: message});
         }
       });
-
-      client.send({type: 'backlog', backlog: backlog});
-      //client.send({userlist:usernames}); TODO Send usernames
 
       clients.push(client);
       return;
@@ -151,6 +151,8 @@ mainsession.addListener('privmsg', function(data) {
   var date = new Date();
 
   backlog.push({nick: nick, message: message, timestamp: date});
+  // FIXME Once backlog is full this will trigger every time, and .shift is costly with big arrays.
+  // Find a better way to do this.
   if (backlog.length > options.backlogbuffer) {
     backlog.shift();
   }
